@@ -6,10 +6,205 @@ log4j是帮助开发人员进行日志输出管理的API类库。它最重要的
 
 log4j的使用步骤：
 现在大多数为web应用都使用了spring框架，而spring框架可以很好的集成log4j,下面介绍的流程都是基于spring而言的。
-第一步：在web.xml里进行log4j的相关配置，特别是指定log4j.properties文件位置。
+第一步：在web.xml里进行log4j的相关配置。
 第二部：配置log4j.properties文件。
 第三部：在程序中使用Log4j框架记录日志。
 第四部：查看日志文件找出错误出现的地方，或者其他信息。
 
 
-第一步：
+第一步：在web.xml里进行log4j的相关配置。
+ <!-- log4j configuration -->
+  <context-param>
+		<param-name>webAppRootKey</param-name>
+		<param-value>webApp.root</param-value>
+	</context-param>
+
+	<context-param>
+		<param-name>log4jConfigLocation</param-name>
+		<param-value>/WEB-INF/classes/log4j.properties</param-value>
+	</context-param>
+  
+  <listener>
+  	<listener-class>
+		  org.springframework.web.util.Log4jConfigListener
+		</listener-class>
+	</listener>  
+
+
+
+
+第二步：配置log4j.properties文件
+
+#测试及开发环境的日志级别，发布到线上的时候该行注释掉
+log.level=DEBUG
+#线上的日志级别,发布到线上的时候去掉注释
+#log.level=ERROR
+
+# 定义了两个输出端
+log4j.rootLogger = WARN, A1,A2
+# 定义A1输出到控制器
+log4j.appender.A1 = org.apache.log4j.ConsoleAppender
+# 定义A1的布局模式为PatternLayout
+log4j.appender.A1.layout = org.apache.log4j.PatternLayout
+# 定义A1的输出格式 %d{yyyy-MM-dd hh:mm:ss}:%p  %c - %m%n
+log4j.appender.A1.layout.ConversionPattern = %d{yyyy-MM-dd hh:mm:ss}:%p  %c - %m%n
+
+# 定义A2输出到文件
+log4j.appender.A2 = org.apache.log4j.DailyRollingFileAppender
+# 定义A2要输出到哪一个文件
+log4j.appender.A2.File = ${webApp.root}/WEB-INF/logs/omni.log
+# 定义A2的布局模式为PatternLayout
+log4j.appender.A2.layout = org.apache.log4j.PatternLayout
+# 定义A2的输出格式
+log4j.appender.A2.layout.ConversionPattern =%d{yyyy-MM-dd hh\:mm\:ss}\:%p  %c  - %m%n 
+
+#全景展示的web层日志记录
+log4j.logger.com.xxx.yyy.net.web = ${log.level},net_web  
+#不继承根日志，这样就不会使得同样的日志在根日志文件和该日志文件都存在
+log4j.additivity.com.xxx.yyy.net.web = false
+log4j.appender.net_web = org.apache.log4j.DailyRollingFileAppender
+log4j.appender.net_web.File = ${webApp.root}/WEB-INF/logs/net_web.log
+log4j.appender.net_web.layout = org.apache.log4j.PatternLayout
+log4j.appender.net_web.layout.ConversionPattern = %d{yyyy-MM-dd hh\:mm\:ss}\:%p %c  - %m%n  
+
+
+#全景展示的人数logic层日志记录
+log4j.logger.com.xxx.yyy.number4.business.number.logic = ${log.level},number_logic
+log4j.appender.number_logic = org.apache.log4j.DailyRollingFileAppender
+log4j.appender.number_logic.File = ${webApp.root}/WEB-INF/logs/number_logic.log
+log4j.appender.number_logic.layout = org.apache.log4j.PatternLayout
+log4j.appender.number_logic.layout.ConversionPattern = %d{yyyy-MM-dd hh\:mm\:ss}\:%p  %c - %m%n 
+
+#全景展示的全景后台logic层日志记录
+log4j.logger.com.xxx.yyy.number4.business.netview.logic = ${log.level},netview_logic
+log4j.appender.netview_logic = org.apache.log4j.DailyRollingFileAppender
+log4j.appender.netview_logic.File = ${webApp.root}/WEB-INF/logs/netview_logic.log
+log4j.appender.netview_logic.layout = org.apache.log4j.PatternLayout
+log4j.appender.netview_logic.layout.ConversionPattern = %d{yyyy-MM-dd hh\:mm\:ss}\:%p  %c - %m%n 
+
+
+
+第三部：在程序中使用Log4j框架记录日志。
+
+private final static Logger LOGGER = Logger.getLogger(OmniAction.class);
+try{
+.......
+}catch (Exception e) {
+            LOGGER.error(e.getMessage(),e);//带上e可以将错误信息的堆栈打印出来，方便定位到问题
+        }
+
+
+
+
+第四部：查看日志文件找出错误出现的地方，或者其他信息。
+如：
+2013-05-29 11:38:31:ERROR com.xxx.yyy.net.web.OmniAction org.directwebremoting.util.CommonsLoggingOutput.error(CommonsLoggingOutput.java:83) - / by zero
+  java.lang.ArithmeticException: / by zero
+        at com.xxx.yyy.net.dao.NodeServerAccess.getNodeServerByBisinessNodeId(NodeServerAccess.java:49)
+        at com.xxx.yyy.net.service.NodeServerLogicImpl.getNodeServerByBisinessNodeId(NodeServerLogicImpl.java:21)
+        at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+        at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+        at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+        at java.lang.reflect.Method.invoke(Method.java:597)
+        at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:304)
+        at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:172)
+        at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:139)
+        at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:107)
+        at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:161)
+        at org.springframework.aop.framework.JdkDynamicAopProxy.invoke(JdkDynamicAopProxy.java:204)
+        at com.sun.proxy.$Proxy50.getNodeServerByBisinessNodeId(Unknown Source)
+        at com.snda.sysdev.net.web.OmniAction.viewNonGame(OmniAction.java:113)
+        at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+        at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+        at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+        at java.lang.reflect.Method.invoke(Method.java:597)
+        at com.opensymphony.xwork2.DefaultActionInvocation.invokeAction(DefaultActionInvocation.java:452)
+        at com.opensymphony.xwork2.DefaultActionInvocation.invokeActionOnly(DefaultActionInvocation.java:291)
+        at com.opensymphony.xwork2.DefaultActionInvocation.invoke(DefaultActionInvocation.java:254)
+        at com.opensymphony.xwork2.interceptor.DefaultWorkflowInterceptor.doIntercept(DefaultWorkflowInterceptor.java:176)
+        at com.opensymphony.xwork2.interceptor.MethodFilterInterceptor.intercept(MethodFilterInterceptor.java:98)
+        at com.opensymphony.xwork2.DefaultActionInvocation.invoke(DefaultActionInvocation.java:248)
+        at com.opensymphony.xwork2.validator.ValidationInterceptor.doIntercept(ValidationInterceptor.java:263)
+        at org.apache.struts2.interceptor.validation.AnnotationValidationInterceptor.doIntercept(AnnotationValidationInterceptor.java:68)
+        at com.opensymphony.xwork2.interceptor.MethodFilterInterceptor.intercept(MethodFilterInterceptor.java:98)
+        at com.opensymphony.xwork2.DefaultActionInvocation.invoke(DefaultActionInvocation.java:248)
+        at com.opensymphony.xwork2.interceptor.ConversionErrorInterceptor.intercept(ConversionErrorInterceptor.java:133)
+        at com.opensymphony.xwork2.DefaultActionInvocation.invoke(DefaultActionInvocation.java:248)
+        at com.opensymphony.xwork2.interceptor.ParametersInterceptor.doIntercept(ParametersInterceptor.java:207)
+        at com.opensymphony.xwork2.interceptor.MethodFilterInterceptor.intercept(MethodFilterInterceptor.java:98)
+        at com.opensymphony.xwork2.DefaultActionInvocation.invoke(DefaultActionInvocation.java:248)
+        at com.opensymphony.xwork2.interceptor.ParametersInterceptor.doIntercept(ParametersInterceptor.java:207)
+        at com.opensymphony.xwork2.interceptor.MethodFilterInterceptor.intercept(MethodFilterInterceptor.java:98)
+        at com.opensymphony.xwork2.DefaultActionInvocation.invoke(DefaultActionInvocation.java:248)
+        at com.opensymphony.xwork2.interceptor.StaticParametersInterceptor.intercept(StaticParametersInterceptor.java:190)
+        at com.opensymphony.xwork2.DefaultActionInvocation.invoke(DefaultActionInvocation.java:248)
+        at org.apache.struts2.interceptor.MultiselectInterceptor.intercept(MultiselectInterceptor.java:75)
+        at com.opensymphony.xwork2.DefaultActionInvocation.invoke(DefaultActionInvocation.java:248)
+        at org.apache.struts2.interceptor.CheckboxInterceptor.intercept(CheckboxInterceptor.java:94)
+        at com.opensymphony.xwork2.DefaultActionInvocation.invoke(DefaultActionInvocation.java:248)
+        at org.apache.struts2.interceptor.FileUploadInterceptor.intercept(FileUploadInterceptor.java:243)
+        at com.opensymphony.xwork2.DefaultActionInvocation.invoke(DefaultActionInvocation.java:248)
+        at com.opensymphony.xwork2.interceptor.ModelDrivenInterceptor.intercept(ModelDrivenInterceptor.java:100)
+        at com.opensymphony.xwork2.DefaultActionInvocation.invoke(DefaultActionInvocation.java:248)
+        at com.opensymphony.xwork2.interceptor.ScopedModelDrivenInterceptor.intercept(ScopedModelDrivenInterceptor.java:141)
+        at com.opensymphony.xwork2.DefaultActionInvocation.invoke(DefaultActionInvocation.java:248)
+        at org.apache.struts2.interceptor.debugging.DebuggingInterceptor.intercept(DebuggingInterceptor.java:267)
+        at com.opensymphony.xwork2.DefaultActionInvocation.invoke(DefaultActionInvocation.java:248)
+        at com.opensymphony.xwork2.interceptor.ChainingInterceptor.intercept(ChainingInterceptor.java:142)
+        at com.opensymphony.xwork2.DefaultActionInvocation.invoke(DefaultActionInvocation.java:248)
+        at com.opensymphony.xwork2.interceptor.PrepareInterceptor.doIntercept(PrepareInterceptor.java:166)
+        at com.opensymphony.xwork2.interceptor.MethodFilterInterceptor.intercept(MethodFilterInterceptor.java:98)
+        at com.opensymphony.xwork2.DefaultActionInvocation.invoke(DefaultActionInvocation.java:248)
+        at com.opensymphony.xwork2.interceptor.I18nInterceptor.intercept(I18nInterceptor.java:176)
+        at com.opensymphony.xwork2.DefaultActionInvocation.invoke(DefaultActionInvocation.java:248)
+        at org.apache.struts2.interceptor.ServletConfigInterceptor.intercept(ServletConfigInterceptor.java:164)
+        at com.opensymphony.xwork2.DefaultActionInvocation.invoke(DefaultActionInvocation.java:248)
+        at com.opensymphony.xwork2.interceptor.AliasInterceptor.intercept(AliasInterceptor.java:190)
+        at com.opensymphony.xwork2.DefaultActionInvocation.invoke(DefaultActionInvocation.java:248)
+        at com.opensymphony.xwork2.interceptor.ExceptionMappingInterceptor.intercept(ExceptionMappingInterceptor.java:187)
+        at com.opensymphony.xwork2.DefaultActionInvocation.invoke(DefaultActionInvocation.java:248)
+        at org.apache.struts2.interceptor.CheckboxInterceptor.intercept(CheckboxInterceptor.java:94)
+        at com.opensymphony.xwork2.DefaultActionInvocation.invoke(DefaultActionInvocation.java:248)
+        at org.apache.struts2.impl.StrutsActionProxy.execute(StrutsActionProxy.java:52)
+        at org.apache.struts2.dispatcher.Dispatcher.serviceAction(Dispatcher.java:485)
+        at org.apache.struts2.dispatcher.FilterDispatcher.doFilter(FilterDispatcher.java:395)
+        at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:243)
+        at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:210)
+        at org.apache.struts2.dispatcher.ActionContextCleanUp.doFilter(ActionContextCleanUp.java:102)
+        at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:243)
+        at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:210)
+        at org.acegisecurity.util.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:264)
+        at org.acegisecurity.intercept.web.FilterSecurityInterceptor.invoke(FilterSecurityInterceptor.java:107)
+        at org.acegisecurity.intercept.web.FilterSecurityInterceptor.doFilter(FilterSecurityInterceptor.java:72)
+        at org.acegisecurity.util.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:274)
+        at org.acegisecurity.ui.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:110)
+        at org.acegisecurity.util.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:274)
+        at org.acegisecurity.wrapper.SecurityContextHolderAwareRequestFilter.doFilter(SecurityContextHolderAwareRequestFilter.java:81)
+        at org.acegisecurity.util.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:274)
+        at org.acegisecurity.providers.anonymous.AnonymousProcessingFilter.doFilter(AnonymousProcessingFilter.java:125)
+        at org.acegisecurity.util.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:274)
+        at org.acegisecurity.ui.AbstractProcessingFilter.doFilter(AbstractProcessingFilter.java:217)
+        at org.acegisecurity.util.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:274)
+        at org.acegisecurity.ui.logout.LogoutFilter.doFilter(LogoutFilter.java:106)
+        at org.acegisecurity.util.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:274)
+        at org.acegisecurity.context.HttpSessionContextIntegrationFilter.doFilter(HttpSessionContextIntegrationFilter.java:229)
+        at org.acegisecurity.util.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:274)
+        at org.acegisecurity.util.FilterChainProxy.doFilter(FilterChainProxy.java:148)
+        at org.acegisecurity.util.FilterToBeanProxy.doFilter(FilterToBeanProxy.java:98)
+        at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:243)
+        at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:210)
+        at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:222)
+        at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:123)
+        at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:472)
+        at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:171)
+        at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:99)
+        at org.apache.catalina.valves.AccessLogValve.invoke(AccessLogValve.java:947)
+        at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:118)
+        at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:408)
+        at org.apache.coyote.http11.AbstractHttp11Processor.process(AbstractHttp11Processor.java:1009)
+        at org.apache.coyote.AbstractProtocol$AbstractConnectionHandler.process(AbstractProtocol.java:589)
+        at org.apache.tomcat.util.net.JIoEndpoint$SocketProcessor.run(JIoEndpoint.java:312)
+        at java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:895)
+        at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:918)
+        at java.lang.Thread.run(Thread.java:662)
+
