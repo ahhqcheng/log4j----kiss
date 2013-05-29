@@ -30,6 +30,7 @@ log4j的使用步骤：
 		</listener-class>
 	</listener>  
 
+关于webAppRootKey的介绍见：http://blog.csdn.net/pairsfish/article/details/7802405
 
 
 <!========================================================神一样的分割线===============================================>
